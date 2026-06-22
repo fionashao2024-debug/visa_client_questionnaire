@@ -1,0 +1,252 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.phone-wrap{display:flex;justify-content:center;padding:1.5rem 0;background:var(--color-background-secondary);border-radius:var(--border-radius-lg)}
+.phone{width:340px;background:var(--color-background-primary);border-radius:24px;border:0.5px solid var(--color-border-tertiary);overflow:hidden;min-height:600px;display:flex;flex-direction:column}
+.status-bar{background:#185FA5;padding:10px 16px 8px;display:flex;justify-content:space-between;align-items:center}
+.status-bar span{color:#E6F1FB;font-size:11px}
+.prog-bar-wrap{height:3px;background:#B5D4F4}
+.prog-bar{height:3px;background:#fff;transition:width .4s}
+.form-header{padding:14px 16px 10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.form-header .step-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:2px}
+.form-header h3{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.form-body{flex:1;padding:14px 16px;overflow-y:auto}
+.q-block{margin-bottom:16px}
+.q-label{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.q-req{color:#A32D2D;font-size:12px}
+.q-hint{font-size:11px;color:var(--color-text-secondary);margin-bottom:6px}
+.q-input{width:100%;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:13px;color:var(--color-text-primary);background:var(--color-background-primary);outline:none}
+.q-input:focus{border-color:#185FA5}
+.q-select{width:100%;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:13px;color:var(--color-text-primary);background:var(--color-background-primary);outline:none}
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.choice-btn{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:12px;color:var(--color-text-primary);background:var(--color-background-primary);cursor:pointer;text-align:center;transition:all .15s}
+.choice-btn.sel{border-color:#185FA5;background:#E6F1FB;color:#0C447C;font-weight:500}
+.choice-btn.sel-single{border-color:#185FA5;background:#E6F1FB;color:#0C447C;font-weight:500}
+.form-footer{padding:12px 16px;border-top:0.5px solid var(--color-border-tertiary);display:flex;gap:8px}
+.btn-back{flex:1;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:9px;font-size:13px;color:var(--color-text-secondary);background:transparent;cursor:pointer}
+.btn-next{flex:2;border:none;border-radius:var(--border-radius-md);padding:9px;font-size:13px;font-weight:500;color:#fff;background:#185FA5;cursor:pointer}
+.btn-next:disabled{background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:not-allowed}
+.btn-submit{flex:1;border:none;border-radius:var(--border-radius-md);padding:9px;font-size:13px;font-weight:500;color:#fff;background:#3B6D11;cursor:pointer}
+.success-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem;text-align:center;flex:1}
+.success-icon{width:56px;height:56px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+.data-preview{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;text-align:left;width:100%;margin-top:1rem;font-size:12px}
+.data-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.data-row:last-child{border-bottom:none}
+.data-key{color:var(--color-text-secondary)}
+.data-val{color:var(--color-text-primary);font-weight:500;text-align:right;max-width:160px}
+</style>
+
+<div class="phone-wrap">
+<h2 class="sr-only">签证申请客户端问卷手机模拟界面</h2>
+<div class="phone">
+  <div class="status-bar">
+    <span>签证申请问卷</span>
+    <span id="stepCount">1 / 5</span>
+  </div>
+  <div class="prog-bar-wrap"><div class="prog-bar" id="progBar" style="width:20%"></div></div>
+
+  <div id="formContent" style="display:flex;flex-direction:column;flex:1"></div>
+</div>
+</div>
+
+<div style="margin-top:1.25rem;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem" id="dataPanel">
+  <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+    <i class="ti ti-antenna" aria-hidden="true" style="color:#185FA5;font-size:15px"></i>
+    顾问端实时接收数据
+  </div>
+  <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px">客户每完成一步，以下数据同步更新</div>
+  <div id="liveData" style="font-size:12px;color:var(--color-text-secondary);font-style:italic">等待客户填写中...</div>
+</div>
+
+<script>
+const STEPS = [
+  {
+    label:'步骤 1 — 选择签证类型',
+    title:'您要申请哪种签证？',
+    fields:[
+      {id:'visa_type',type:'choice-single',label:'签证类型',req:true,opts:['🇨🇦 加拿大超级签证','🇦🇺 澳洲 600 签证','🇨🇦 加拿大访问签证','🇺🇸 美国 B1/B2']}
+    ]
+  },
+  {
+    label:'步骤 2 — 基本信息',
+    title:'申请人基本信息',
+    fields:[
+      {id:'name_cn',type:'text',label:'姓名（中文）',req:true,placeholder:'例：陈美玲'},
+      {id:'name_en',type:'text',label:'姓名（拼音，与护照一致）',req:true,placeholder:'例：CHEN MEILING'},
+      {id:'dob',type:'text',label:'出生日期',req:true,placeholder:'例：1988-03-15'},
+      {id:'passport',type:'text',label:'护照号码',req:true,placeholder:'例：E12345678'},
+      {id:'passport_exp',type:'text',label:'护照有效期至',req:true,placeholder:'例：2030-06-20'},
+      {id:'phone',type:'text',label:'联系电话',req:true,placeholder:'例：138-0000-8888'}
+    ]
+  },
+  {
+    label:'步骤 3 — 职业与财务',
+    title:'工作与经济状况',
+    fields:[
+      {id:'job_status',type:'choice-single',label:'目前职业状态',req:true,opts:['在职员工','个体经营/自雇','退休','学生']},
+      {id:'company',type:'text',label:'工作单位名称',req:false,placeholder:'例：上海某科技有限公司'},
+      {id:'position',type:'text',label:'职位',req:false,placeholder:'例：市场经理'},
+      {id:'salary',type:'text',label:'月薪（税前，人民币）',req:false,placeholder:'例：22000'},
+      {id:'bank_balance',type:'choice-single',label:'银行存款大致范围',req:true,opts:['5万以下','5–10万','10–30万','30万以上']}
+    ]
+  },
+  {
+    label:'步骤 4 — 行程与背景',
+    title:'旅行目的与背景',
+    fields:[
+      {id:'purpose',type:'choice-single',label:'本次出行目的',req:true,opts:['旅游观光','探亲访友','商务出行','医疗就诊']},
+      {id:'duration',type:'choice-single',label:'计划停留时间',req:true,opts:['少于2周','2周–1个月','1–3个月','3个月以上']},
+      {id:'family_cn',type:'choice-single',label:'配偶/子女是否在国内',req:true,opts:['有配偶/子女在国内','无']},
+      {id:'property',type:'choice-single',label:'在国内是否有房产',req:true,opts:['有','无']},
+      {id:'prev_visa',type:'choice-single',label:'是否有目的地国家历史签证',req:true,opts:['有有效签证','曾经获批（已过期）','从未申请','曾被拒签']}
+    ]
+  },
+  {
+    label:'步骤 5 — 确认提交',
+    title:'确认信息并提交',
+    fields:[
+      {id:'confirm_accurate',type:'choice-multi',label:'请确认以下事项',req:true,opts:['以上填写信息真实准确','同意顾问保存并使用以上信息用于签证申请']},
+      {id:'remarks',type:'textarea',label:'补充说明（选填）',req:false,placeholder:'如有特殊情况或需要告知顾问的事项，请在此说明'}
+    ]
+  }
+];
+
+let cur=0;
+let answers={};
+
+function getStepAnswers(step){
+  const res={};
+  step.fields.forEach(f=>{
+    const el=document.getElementById('field-'+f.id);
+    if(el) res[f.id]=el.value;
+    else res[f.id]=answers[f.id]||'';
+  });
+  return res;
+}
+
+function renderStep(idx){
+  const step=STEPS[idx];
+  const pct=Math.round((idx+1)/STEPS.length*100);
+  document.getElementById('progBar').style.width=pct+'%';
+  document.getElementById('stepCount').textContent=(idx+1)+' / '+STEPS.length;
+
+  let html=`<div class="form-header"><div class="step-label">${step.label}</div><h3>${step.title}</h3></div><div class="form-body">`;
+  step.fields.forEach(f=>{
+    html+=`<div class="q-block"><div class="q-label">${f.label}${f.req?'<span class="q-req">*</span>':''}</div>`;
+    if(f.type==='text'){
+      html+=`<input class="q-input" id="field-${f.id}" placeholder="${f.placeholder||''}" value="${answers[f.id]||''}">`;
+    } else if(f.type==='textarea'){
+      html+=`<textarea class="q-input" id="field-${f.id}" rows="3" placeholder="${f.placeholder||''}" style="resize:none">${answers[f.id]||''}</textarea>`;
+    } else if(f.type==='choice-single'){
+      const saved=answers[f.id]||'';
+      html+=`<div class="choice-grid">`;
+      f.opts.forEach(o=>{
+        html+=`<button class="choice-btn${saved===o?' sel-single':''}" onclick="pickSingle('${f.id}',this,'${o.replace(/'/g,"\\'")}')">${o}</button>`;
+      });
+      html+=`</div>`;
+    } else if(f.type==='choice-multi'){
+      const saved=answers[f.id]?answers[f.id].split('|'):[];
+      html+=`<div style="display:flex;flex-direction:column;gap:6px">`;
+      f.opts.forEach(o=>{
+        const isSel=saved.includes(o);
+        html+=`<button class="choice-btn${isSel?' sel':''}" style="text-align:left;grid-column:span 2" onclick="pickMulti('${f.id}',this,'${o.replace(/'/g,"\\'")}')">${o}</button>`;
+      });
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+
+  const isLast=idx===STEPS.length-1;
+  html+=`<div class="form-footer">`;
+  if(idx>0) html+=`<button class="btn-back" onclick="goBack()"><i class="ti ti-arrow-left" aria-hidden="true"></i> 上一步</button>`;
+  if(!isLast) html+=`<button class="btn-next" onclick="goNext()">下一步 <i class="ti ti-arrow-right" aria-hidden="true"></i></button>`;
+  else html+=`<button class="btn-submit" onclick="submitForm()"><i class="ti ti-check" aria-hidden="true"></i> 确认提交</button>`;
+  html+=`</div>`;
+
+  document.getElementById('formContent').innerHTML=html;
+}
+
+function pickSingle(fid,btn,val){
+  answers[fid]=val;
+  btn.closest('.choice-grid').querySelectorAll('.choice-btn').forEach(b=>{
+    b.className='choice-btn'+(b===btn?' sel-single':'');
+  });
+  updateLive();
+}
+
+function pickMulti(fid,btn,val){
+  const saved=answers[fid]?answers[fid].split('|').filter(Boolean):[];
+  const idx=saved.indexOf(val);
+  if(idx>-1) saved.splice(idx,1); else saved.push(val);
+  answers[fid]=saved.join('|');
+  btn.className='choice-btn'+(saved.includes(val)?' sel':'');
+  btn.style.textAlign='left';
+  updateLive();
+}
+
+function saveCurrentInputs(){
+  const step=STEPS[cur];
+  step.fields.forEach(f=>{
+    if(f.type==='text'||f.type==='textarea'){
+      const el=document.getElementById('field-'+f.id);
+      if(el) answers[f.id]=el.value;
+    }
+  });
+}
+
+function goNext(){
+  saveCurrentInputs();
+  updateLive();
+  if(cur<STEPS.length-1){cur++;renderStep(cur);}
+}
+function goBack(){
+  saveCurrentInputs();
+  if(cur>0){cur--;renderStep(cur);}
+}
+
+function updateLive(){
+  const labels={
+    visa_type:'签证类型',name_cn:'姓名',name_en:'英文姓名',dob:'出生日期',
+    passport:'护照号',passport_exp:'护照有效期',phone:'电话',
+    job_status:'职业状态',company:'单位',position:'职位',salary:'月薪',bank_balance:'存款范围',
+    purpose:'出行目的',duration:'停留时间',family_cn:'家庭情况',property:'房产',prev_visa:'历史签证',
+    remarks:'补充说明'
+  };
+  const filled=Object.entries(answers).filter(([k,v])=>v&&v.trim()&&k!=='confirm_accurate');
+  if(!filled.length){
+    document.getElementById('liveData').innerHTML='<span style="color:var(--color-text-secondary);font-style:italic">等待客户填写中...</span>';
+    return;
+  }
+  let html='<div style="display:flex;flex-direction:column;gap:2px">';
+  filled.forEach(([k,v])=>{
+    html+=`<div class="data-row"><span class="data-key">${labels[k]||k}</span><span class="data-val">${v.replace(/\|/g,' · ')}</span></div>`;
+  });
+  html+=`</div><div style="font-size:11px;color:var(--color-text-secondary);margin-top:8px;text-align:right">已填写 ${filled.length} 项 · 实时同步</div>`;
+  document.getElementById('liveData').innerHTML=html;
+}
+
+function submitForm(){
+  saveCurrentInputs();
+  updateLive();
+  const fc=document.getElementById('formContent');
+  fc.innerHTML=`<div class="success-screen">
+    <div class="success-icon"><i class="ti ti-check" style="font-size:28px;color:#3B6D11" aria-hidden="true"></i></div>
+    <div style="font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px">提交成功</div>
+    <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:4px">您的信息已发送给签证顾问<br>顾问将在 1 个工作日内与您联系</div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-top:8px">提交时间：${new Date().toLocaleString('zh-CN',{hour12:false})}</div>
+    <div class="data-preview">
+      <div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">您提交的信息摘要</div>
+      ${Object.entries(answers).filter(([k,v])=>v&&v.trim()&&k!=='confirm_accurate').slice(0,6).map(([k,v])=>`<div class="data-row"><span class="data-key" style="font-size:11px">${({visa_type:'签证类型',name_cn:'姓名',name_en:'英文名',dob:'出生日期',passport:'护照号',purpose:'出行目的',job_status:'职业',bank_balance:'存款范围'})[k]||k}</span><span class="data-val" style="font-size:11px">${v.replace(/\|/g,' · ')}</span></div>`).join('')}
+    </div>
+  </div>`;
+  document.getElementById('progBar').style.width='100%';
+
+  const panel=document.getElementById('dataPanel');
+  panel.style.borderColor='#3B6D11';
+  const title=panel.querySelector('div:first-child');
+  title.innerHTML='<i class="ti ti-circle-check" aria-hidden="true" style="color:#3B6D11;font-size:15px"></i> <span style="color:var(--color-text-primary);font-size:13px;font-weight:500">客户已提交 — 数据已接收</span>';
+}
+
+renderStep(0);
+</script>
